@@ -22,8 +22,6 @@ endif()
 # You can change the name, but then you manually have to search for 'HMT26_FIRMWARE.elf' and change it everywhere in this repository.
 set(CMAKE_PROJECT_NAME HMT26_FIRMWARE)
 
-# Include toolchain file
-include("cmake/gcc-arm-none-eabi.cmake")
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -80,6 +78,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${FINAL_INC_DIRS}
     Project/Inc
+    Modules/dbc-boat/Inc
 )
 
 # Add project symbols (macros)
@@ -88,6 +87,12 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 include(${CMAKE_SOURCE_DIR}/Project/hmt-compile-project-lib.cmake)
+
+# Ensure the library target compiling your Project/ files also knows where to find the headers
+target_include_directories(HMT_PROJECT_LIB PRIVATE
+    ${FINAL_INC_DIRS}
+    Modules/dbc-boat/Inc
+)
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}

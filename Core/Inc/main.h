@@ -36,7 +36,10 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+#define ADC_BUF_LEN ( 6)
+extern uint8_t status_changed_flag;
 
+extern uint16_t adc_buf[ADC_BUF_LEN];
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -57,6 +60,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Level_sensor_Pin GPIO_PIN_0
+#define Level_sensor_GPIO_Port GPIOC
+#define PT2_Pin GPIO_PIN_1
+#define PT2_GPIO_Port GPIOC
+#define PT3_Pin GPIO_PIN_2
+#define PT3_GPIO_Port GPIOC
+#define TC_1_Pin GPIO_PIN_3
+#define TC_1_GPIO_Port GPIOC
+#define TS1_Pin GPIO_PIN_0
+#define TS1_GPIO_Port GPIOA
+#define FM_1_Pin GPIO_PIN_1
+#define FM_1_GPIO_Port GPIOA
 #define LED_DEBUG_1_Pin GPIO_PIN_4
 #define LED_DEBUG_1_GPIO_Port GPIOA
 #define LED_DEBUG_2_Pin GPIO_PIN_5

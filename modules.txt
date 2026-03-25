@@ -1,0 +1,2 @@
+CAN-Queue git@github.com:TUDelftSBT/HMT24_CAN_Queue.git master
+dbc-boat git@github.com:TUDelftSBT/HMT26_DBC.git main
