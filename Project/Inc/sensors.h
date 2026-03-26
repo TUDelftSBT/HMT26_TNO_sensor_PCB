@@ -1,10 +1,8 @@
-//
-// Created by julia on 28-5-2025.
-//
+#pragma once
 
-#ifndef SENSORS_H
-#define SENSORS_H
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "main.h"
 #include "database.h"
@@ -65,6 +63,6 @@ void send_sensor_values();
 void init_sensors();
 
 
-
-
-#endif //SENSORS_H
+#ifdef __cplusplus
+}
+#endif

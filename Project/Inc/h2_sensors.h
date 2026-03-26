@@ -1,11 +1,10 @@
-#ifndef TEMPLATE_H2_SENSORS_H
-#define TEMPLATE_H2_SENSORS_H
-
-#include "database.h"
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "database.h"
 
 extern struct h2_sensors_t h2_sensors;
 extern struct database_bc_hdgn_sensors_can_t h2_sensors_can_bc;
@@ -53,5 +52,3 @@ void init_h2_sensors();
 #ifdef __cplusplus
 }
 #endif
-
-#endif //TEMPLATE_H2_SENSORS_H

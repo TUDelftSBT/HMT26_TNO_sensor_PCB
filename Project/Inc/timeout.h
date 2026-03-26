@@ -1,5 +1,9 @@
-#ifndef VCU_TIMEOUT_H
-#define VCU_TIMEOUT_H
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "main.h"
 
@@ -27,4 +31,7 @@ uint8_t get_component_disconnected(struct timeout_component_t *t);
 void update_timeout_component(struct timeout_component_t *t);
 void init_timeout_components();
 
-#endif //VCU_TIMEOUT_H
+
+#ifdef __cplusplus
+}
+#endif
