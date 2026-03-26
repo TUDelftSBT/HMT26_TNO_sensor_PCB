@@ -25,7 +25,7 @@
             "label": "Pre-compile",
             "hide": true,
             "type": "shell",
-            "command": "./scripts/build-scripts/pre-build.sh",
+            "command": "sh ./scripts/build-scripts/pre-build.sh",
         },
         {
             "label": "Build Project",
@@ -41,7 +41,7 @@
         {
             "label": "Post-compile",
             "type": "shell",
-            "command": "./scripts/build-scripts/post-build.sh",
+            "command": "sh ./scripts/build-scripts/post-build.sh",
             "dependsOn" : ["Build Project"]
         },
         {
@@ -58,7 +58,7 @@
         {
             "label": "Build and Test",
             "type": "shell",
-            "command": "./scripts/dev-container/tests/run-tests.sh",
+            "command": "sh ./scripts/dev-container/tests/run-tests.sh",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

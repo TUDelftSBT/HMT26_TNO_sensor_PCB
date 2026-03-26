@@ -17,5 +17,5 @@
     },
     "runArgs": ["--privileged"],
     "remoteUser": "root",
-    "postStartCommand": "./scripts/trice/copy-trice-source.sh ${localWorkspaceFolderBasename} && ./scripts/trice/create-trice-db.sh"
+    "postStartCommand": "sh ./scripts/trice/copy-trice-source.sh ${localWorkspaceFolderBasename} && sh ./scripts/trice/create-trice-db.sh"
 }

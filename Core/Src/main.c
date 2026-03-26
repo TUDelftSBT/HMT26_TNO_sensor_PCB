@@ -90,13 +90,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART1_UART_Init();
   MX_CAN2_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM13_Init();
   MX_TIM14_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   app_init();
 
