@@ -22,8 +22,6 @@ endif()
 # You can change the name, but then you manually have to search for 'HMT26_FIRMWARE.elf' and change it everywhere in this repository.
 set(CMAKE_PROJECT_NAME HMT26_FIRMWARE)
 
-# Include toolchain file
-include("cmake/gcc-arm-none-eabi.cmake")
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -65,7 +63,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${SOURCES}
 )
 
-file(GLOB_RECURSE INC_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_SOURCE_DIR} Modules/**/Inc)
+file(GLOB_RECURSE INC_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_SOURCE_DIR} Modules/** Modules/**/Inc)
 
 # Filter only directories that end with "/Inc"
 set(FINAL_INC_DIRS "")
@@ -80,6 +78,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${FINAL_INC_DIRS}
     Project/Inc
+    Modules/trice/src
 )
 
 # Add project symbols (macros)
