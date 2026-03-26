@@ -1,6 +1,8 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+FROM base AS requiredforstm
 
 # Update CMake to the latest version
 RUN apt-get update && \
@@ -69,11 +71,29 @@ RUN wget -qO- https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/bi
     ln -s /opt/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-ranlib /usr/bin/arm-none-eabi-ranlib && \
     ln -s /opt/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-strip /usr/bin/arm-none-eabi-strip
 
+FROM requiredforstm AS createworkspace
+
+WORKDIR /workspaces
+
+FROM createworkspace AS customlibraries
+
+# Trice
+# Download and install trice
+RUN mkdir -p /opt/trice && \
+    wget -qO- https://github.com/rokath/trice/releases/download/v1.1.1/trice_linux_amd64.tar.gz \
+    | tar -xz -C /opt/trice --strip-components=1 && \
+    cd /opt/trice && \
+    mv trice /usr/local/bin/trice && \
+    chmod +x /usr/local/bin/trice
+
+ENV PATH="/usr/local/bin:${PATH}"
+RUN trice ver
+
+FROM customlibraries AS createuser
+
 # Add VSCode user
 RUN useradd -ms /bin/bash vscode && \
     echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-USER vscode
-
-WORKDIR /workspaces
 RUN chown -R vscode:vscode /workspaces
+USER vscode

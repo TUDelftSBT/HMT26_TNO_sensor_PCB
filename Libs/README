@@ -1,0 +1,4 @@
+The Libs folder is for libraries that we include that are not created by us.
+
+Because the libraries often need their own configurations and stuff, it is easier to handle them seperately.
+The Modules folder is for including modules that we have created.

@@ -20,17 +20,12 @@
             },
             "problemMatcher": []
         },
+
         {
-            "label": "Flash using OpenOCD",
+            "label": "Pre-compile",
+            "hide": true,
             "type": "shell",
-            "command": "openocd -f openocd.cfg",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": [
-                "Build Project"
-            ]
+            "command": "./scripts/build-scripts/pre-build.sh",
         },
         {
             "label": "Build Project",
@@ -39,7 +34,26 @@
             "group": "build",
             "problemMatcher": [],
             // TODO: build in release when you want to foil
-            "detail": "CMake build task"
+            "detail": "CMake build task",
+            "dependsOn" : ["Pre-compile"],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Post-compile",
+            "type": "shell",
+            "command": "./scripts/build-scripts/post-build.sh",
+            "dependsOn" : ["Build Project"]
+        },
+        {
+            "label": "Flash using OpenOCD",
+            "type": "shell",
+            "command": "openocd -f openocd.cfg",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn" : ["Post-compile"],
+            "dependsOrder": "sequence",
         },
         {
             "label": "Build and Test",
