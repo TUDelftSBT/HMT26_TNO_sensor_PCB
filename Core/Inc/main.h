@@ -36,7 +36,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-#define ADC_BUF_LEN ( 6)
+#define ADC_BUF_LEN ( 7)
 extern uint8_t status_changed_flag;
 
 extern uint16_t adc_buf[ADC_BUF_LEN];
@@ -70,24 +70,31 @@ void Error_Handler(void);
 #define TC_1_GPIO_Port GPIOC
 #define TS1_Pin GPIO_PIN_0
 #define TS1_GPIO_Port GPIOA
-#define FM_1_Pin GPIO_PIN_1
+#define FM_1_Pin GPIO_PIN_4
 #define FM_1_GPIO_Port GPIOA
-#define LED_DEBUG_1_Pin GPIO_PIN_4
-#define LED_DEBUG_1_GPIO_Port GPIOA
-#define LED_DEBUG_2_Pin GPIO_PIN_5
-#define LED_DEBUG_2_GPIO_Port GPIOA
-#define LED_DEBUG_3_Pin GPIO_PIN_6
-#define LED_DEBUG_3_GPIO_Port GPIOA
-#define LED_DEBUG_4_Pin GPIO_PIN_7
-#define LED_DEBUG_4_GPIO_Port GPIOA
-#define LED_DEBUG_5_Pin GPIO_PIN_4
-#define LED_DEBUG_5_GPIO_Port GPIOC
-#define BOAT_CAN_TX_Pin GPIO_PIN_13
-#define BOAT_CAN_TX_GPIO_Port GPIOB
-#define BOAT_CAN_RX_Pin GPIO_PIN_5
-#define BOAT_CAN_RX_GPIO_Port GPIOB
+#define Leak_sensor_Pin GPIO_PIN_6
+#define Leak_sensor_GPIO_Port GPIOA
+#define LED_DEBUG_3_Pin GPIO_PIN_2
+#define LED_DEBUG_3_GPIO_Port GPIOB
+#define BOAT_CAN_TX_X_Pin GPIO_PIN_13
+#define BOAT_CAN_TX_X_GPIO_Port GPIOB
+#define BOAT_CAN_RX_Pin GPIO_PIN_11
+#define BOAT_CAN_RX_GPIO_Port GPIOA
+#define BOAT_CAN_TX_Pin GPIO_PIN_12
+#define BOAT_CAN_TX_GPIO_Port GPIOA
+#define LED_DEBUG_5_Pin GPIO_PIN_3
+#define LED_DEBUG_5_GPIO_Port GPIOB
+#define LED_DEBUG_4_Pin GPIO_PIN_4
+#define LED_DEBUG_4_GPIO_Port GPIOB
+#define BOAT_CAN_RX_X_Pin GPIO_PIN_5
+#define BOAT_CAN_RX_X_GPIO_Port GPIOB
+#define LED_DEBUG_2_Pin GPIO_PIN_6
+#define LED_DEBUG_2_GPIO_Port GPIOB
+#define LED_DEBUG_1_Pin GPIO_PIN_7
+#define LED_DEBUG_1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
 
 /* USER CODE END Private defines */
 

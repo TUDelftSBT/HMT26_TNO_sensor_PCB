@@ -8,6 +8,7 @@
 #include "can.h"
 #include <math.h>
 #include "main.h"
+#include <stdio.h>
 
 //#define NUMBER_OF_TANKS_IN_USE 3
 
@@ -75,11 +76,12 @@ static double __attribute__((unused)) get_moving_average(struct moving_average_t
   void init_sensors()
   {
     init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP , 0);                    // PA0 / TS1_Pin
-    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, 1);                     // PA1 / FM1_Pin
+    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, 1);                     // PA4 / FM1_Pin
     init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, 2);         // PC0 / Level_sensor_Pin
     init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, 3); // PC1 / PT2_Pin
     init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, 4); // PC2 / PT3_Pin
     init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, 5);             // PC3 / TC_1_Pin
+    init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, 6);                            // PA6 / Index 6
   }
 
 
@@ -89,6 +91,8 @@ static void update_sensor_value(struct sensor_t* s)
 
   // Mapping the dma value to the actual measured voltage
   double V_o = 3.3 * dma_value / 4095.0;
+
+  //printf("sensor.c - ADC DMA item %d: dma_value = %u, V_o = %fV\r\n", s->dma_item, dma_value, V_o);
 
   switch (s->type)
   {
@@ -101,28 +105,31 @@ static void update_sensor_value(struct sensor_t* s)
       // With this voltage, the pressure can be calculated. 0.5V represents 0 bar and 4.5V represents 448 bar. Therefore,
       //  the pressure can be calculated by (V_i - 0.5) * Delta P / Delta V = (V_i - 0.5) * (448 - 0) / (4.5 - 0.5) =
       //  V_i * 112 - 66
-      double R_1 = 170;
-      double R_2 = 320;
+      double R_1 = 10000;
+      double R_2 = 18000;
 
       // Sensor output voltage
       double V_i = V_o * (R_1 + R_2) / R_2;
 
-      double max_pressure = 21.0;
+      double max_pressure = 14.0;
       double min_pressure = 0.0;
       double voltage_max = 5.0;
       double voltage_min = 0.0;
       double a = (max_pressure- min_pressure)/ (voltage_max-voltage_min);
       double b = min_pressure - a*voltage_min;
 
-      // If the measured voltage equals an invalid value, set the pressure to 0 bar
-      if (V_i <= 0.06)
+      
+      /*
+      // check als voltage word gemeten 
+      if (V_i >= 0.2)
       {
-        s->value = 0;
         HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
 
-        return;
+       return;
       }
-
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+      
+      */
 
       // Actual pressure
       s->value = V_i * a + b + 1; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
@@ -151,9 +158,20 @@ static void update_sensor_value(struct sensor_t* s)
         s->value = 0;
         return;
       }
+      /*
+       if (V_o >= 0.2)
+      {
+        HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+       return;
+      }
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+      */
+      
       // Actual temperture
       s->value = V_o * a + b;
       break;
+
     }
 
   case CYRO_TEMP:
@@ -180,6 +198,15 @@ static void update_sensor_value(struct sensor_t* s)
         s->value = 0;
         return;
       }
+      /*
+      if (V_o >= 0.2)
+      {
+        HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+       return;
+      }
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+      */
       // Actual temperture
       s->value = V_o * a + b;
       break;
@@ -204,9 +231,21 @@ static void update_sensor_value(struct sensor_t* s)
         s->value = 0;
         return;
       }
+
+
+      if (V_o >= 0.2)
+      {
+        HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+       return;
+      }
+       
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
       // Actual temperture
       s->value = V_o * a + b;
       break;
+
+      
     }
 
   case COOLING_FLOW:
@@ -227,8 +266,24 @@ static void update_sensor_value(struct sensor_t* s)
         s->value = 0;
         return;
       }
+      /*
+       if (V_o >= 0.2)
+      {
+        HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+       return;
+      }
+       
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+      */
       // Actual temperture
       s->value = V_o * a + b;
+      break;
+    }
+
+  case LEAK_DETECTOR:
+    {
+      s->value = V_o; // Assign the raw voltage or convert it to a meaningful unit
       break;
     }
 
@@ -333,6 +388,7 @@ static void update_sensor_value(struct sensor_t* s)
     update_sensor_value(&sensors.liquid_tank_pressure_sensor_1);
     update_sensor_value(&sensors.liquid_tank_pressure_sensor_2);
     update_sensor_value(&sensors.liquid_tank_temperature_sensor);
+    update_sensor_value(&sensors.leak_sensor);
 
 
   }
@@ -344,7 +400,7 @@ static void update_sensor_value(struct sensor_t* s)
     // lh2_status.liquid_tank_temp = database_bc_hdgn_chub_sens_lh2_status_liquid_tank_temp_encode(
     //   sensors.liquid_tank_temp_sensor.value);
 
-    HAL_GPIO_TogglePin(LED_DEBUG_3_GPIO_Port, LED_DEBUG_3_Pin);
+    HAL_GPIO_TogglePin(LED_DEBUG_1_GPIO_Port, LED_DEBUG_1_Pin);
 
     lh2_status.liquid_tank_pres_1 = database_bc_hdgn_chub_sens_lh2_status_liquid_tank_pres_1_encode(
       sensors.liquid_tank_pressure_sensor_1.value);
@@ -356,7 +412,8 @@ static void update_sensor_value(struct sensor_t* s)
 sensors.liquid_tank_temperature_sensor.value);
 
   database_bc_hdgn_chub_sens_lh2_status_pack(data, &lh2_status, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_LENGTH);
-  queue_CAN_message(&hcan2, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_FRAME_ID, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_LENGTH, data);
+  
+  queue_CAN_message(&hcan1, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_FRAME_ID, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_LENGTH, data);
 
 
 
@@ -367,7 +424,7 @@ sensors.liquid_tank_temperature_sensor.value);
     sensors.cooling_temp_sensor.value);
 
   database_bc_cryo_chub_sens_h2_status_cool_pack(data, &cryo_cool_status, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH);
-  queue_CAN_message(&hcan2, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_FRAME_ID, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH, data);
+  queue_CAN_message(&hcan1, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_FRAME_ID, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH, data);
   }
 
   static void init_sensor(struct sensor_t* s, enum sensor_type type, uint8_t dma_item)

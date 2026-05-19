@@ -1,4 +1,4 @@
 # Remove the `.template` extension
 
 # For example:
-USBPORT=1-2
+USBPORT=1-1

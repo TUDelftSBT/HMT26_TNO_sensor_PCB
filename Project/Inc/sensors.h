@@ -6,6 +6,7 @@ extern "C" {
 
 #include "main.h"
 #include "database.h"
+#include <stdint.h>
 
 
 
@@ -18,7 +19,8 @@ enum sensor_type {
     LIQUID_SENSOR_PRESSURE,
     CYRO_TEMP,
     COOLING_TEMP,
-    COOLING_FLOW
+    COOLING_FLOW,
+    LEAK_DETECTOR
 };
 
 
@@ -55,7 +57,8 @@ struct sensors_t {
     struct sensor_t liquid_tank_pressure_sensor_2;      // PT3 sensor *PC2
     struct sensor_t liquid_tank_temperature_sensor;     //TC-1 PC3
     struct sensor_t cooling_temp_sensor;                // TS-1 PA0
-    struct sensor_t cooling_flow_sensor;                // FM-1 PA1
+    struct sensor_t cooling_flow_sensor;                // FM-1 PA4
+    struct sensor_t leak_sensor;                        // Leak detector PA6
 };
 
 void update_sensor_values();

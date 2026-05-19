@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include "database.h"
 
 extern struct h2_sensors_t h2_sensors;

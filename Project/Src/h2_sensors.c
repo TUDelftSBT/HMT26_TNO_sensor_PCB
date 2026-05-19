@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include "main.h"
 #include "database.h"
 #include "can.h"
 #include "can_queue.h"
@@ -382,5 +383,8 @@ void init_h2_sensors() {
     init_h2_sensor(&h2_sensors.can_h2_sensor_star, CAN_H2_SENSOR, -1);
     init_h2_sensor(&h2_sensors.can_h2_sensor_4, CAN_H2_SENSOR, -1);
     init_h2_sensor(&h2_sensors.analogue_h2_sensor_centre, ANALOGUE_H2_SENSOR, 4);
+    
+    // Disabled analogue H2 sensor - it was conflicting with PT3 on DMA index 4!
+    init_h2_sensor(&h2_sensors.analogue_h2_sensor_centre, CAN_H2_SENSOR, -1); 
 
 }
