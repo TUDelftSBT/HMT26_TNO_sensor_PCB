@@ -6,6 +6,7 @@
 #include "database.h"
 #include "can_queue.h"
 #include "can.h"
+#include "adc.h"
 #include <math.h>
 #include "main.h"
 #include <stdio.h>
@@ -17,7 +18,40 @@ struct sensors_t sensors;
 struct database_bc_hdgn_chub_sens_lh2_status_t lh2_status;
 struct database_bc_cryo_chub_sens_h2_status_cool_t cryo_cool_status;
 
-static void init_sensor(struct sensor_t* s, enum sensor_type type, uint8_t dma_item);
+static void init_sensor(struct sensor_t* s, enum sensor_type type, uint32_t adc_channel);
+
+double ADC_Read_Channel(uint32_t channel); // functie direct adc uitlezen 
+
+double ADC_Read_Channel(uint32_t channel)
+{
+    ADC_ChannelConfTypeDef sConfig = {0};
+    uint16_t raw_value = 0;
+    double pin_v = 0.0;
+
+    /* 1. Configure the ADC to target ONLY the requested channel */
+    sConfig.Channel = channel;
+    sConfig.Rank = 1;                             // Always Rank 1 since we read one at a time
+    sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES; // 56+ cycles prevents channels bleeding into each other
+    
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+        // Configuration failed - handle error or return 0
+        return 0.0; 
+    }
+
+    /* 2. Run the sampling sequence */
+    HAL_ADC_Start(&hadc1);
+    
+    if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+    {
+        raw_value = HAL_ADC_GetValue(&hadc1);
+    }
+    
+    HAL_ADC_Stop(&hadc1); // Stop and release the ADC lock
+    pin_v = 3.3 * raw_value / 4095.0;
+    return pin_v;
+}
+
 
 /**
  * Function to add a datapoint to the moving average
@@ -75,24 +109,28 @@ static double __attribute__((unused)) get_moving_average(struct moving_average_t
 
   void init_sensors()
   {
-    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP , 0);                    // PA0 / TS1_Pin
-    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, 1);                     // PA4 / FM1_Pin
-    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, 2);         // PC0 / Level_sensor_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, 3); // PC1 / PT2_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, 4); // PC2 / PT3_Pin
-    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, 5);             // PC3 / TC_1_Pin
-    init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, 6);                            // PA6 / Index 6
+    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP, ADC_CHANNEL_0);                    // PA0 / TS1_Pin
+    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, ADC_CHANNEL_4);                     // PA4 / FM1_Pin
+    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, ADC_CHANNEL_10);         // PC0 / Level_sensor_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_11); // PC1 / PT2_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_12); // PC2 / PT3_Pin
+    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, ADC_CHANNEL_13);             // PC3 / TC_1_Pin
+    init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, ADC_CHANNEL_6);                            // PA6 / Index 6
   }
 
 
 static void update_sensor_value(struct sensor_t* s)
 {
-  uint16_t dma_value = adc_buf[s->dma_item];
+  // Read the voltage directly from the ADC channel
+  double V_o = ADC_Read_Channel(s->adc_channel);
 
-  // Mapping the dma value to the actual measured voltage
-  double V_o = 3.3 * dma_value / 4095.0;
+        if (V_o >= 0.6)
+      {
+        HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+      }
+      HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
 
-  //printf("sensor.c - ADC DMA item %d: dma_value = %u, V_o = %fV\r\n", s->dma_item, dma_value, V_o);
+  //printf("sensor.c - ADC channel %lu: V_o = %fV\r\n", s->adc_channel, V_o);
 
   switch (s->type)
   {
@@ -128,11 +166,11 @@ static void update_sensor_value(struct sensor_t* s)
        return;
       }
       HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
-      
       */
+      
 
       // Actual pressure
-      s->value = V_i * a + b + 1; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
+      s->value =   V_i * a + b ; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
       break;
     }
 
@@ -236,8 +274,6 @@ static void update_sensor_value(struct sensor_t* s)
       if (V_o >= 0.2)
       {
         HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
-
-       return;
       }
        
       HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
@@ -427,9 +463,9 @@ sensors.liquid_tank_temperature_sensor.value);
   queue_CAN_message(&hcan1, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_FRAME_ID, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH, data);
   }
 
-  static void init_sensor(struct sensor_t* s, enum sensor_type type, uint8_t dma_item)
+  static void init_sensor(struct sensor_t* s, enum sensor_type type, uint32_t adc_channel)
   {
     s->type = type;
-    s->dma_item = dma_item;
+    s->adc_channel = adc_channel;
     s->value = 0;
   }
