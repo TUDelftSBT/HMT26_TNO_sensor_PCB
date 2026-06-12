@@ -145,7 +145,7 @@ static void update_sensor_value(struct sensor_t* s)
       // With this voltage, the pressure can be calculated. 0.5V represents 0 bar and 4.5V represents 448 bar. Therefore,
       //  the pressure can be calculated by (V_i - 0.5) * Delta P / Delta V = (V_i - 0.5) * (448 - 0) / (4.5 - 0.5) =
       //  V_i * 112 - 66
-      double R_1 = 10000;
+      double R_1 = 5000;
       double R_2 = 18000;
 
       // Sensor output voltage
