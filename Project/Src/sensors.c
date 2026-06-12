@@ -18,6 +18,8 @@ struct sensors_t sensors;
 struct database_bc_hdgn_chub_sens_lh2_status_t lh2_status;
 struct database_bc_cryo_chub_sens_h2_status_cool_t cryo_cool_status;
 
+struct database_bc_hdgn_analogue_vi_t h2_analogue_vi_bc;
+
 static void init_sensor(struct sensor_t* s, enum sensor_type type, uint32_t adc_channel);
 
 double ADC_Read_Channel(uint32_t channel); // functie direct adc uitlezen 
@@ -109,13 +111,13 @@ static double __attribute__((unused)) get_moving_average(struct moving_average_t
 
   void init_sensors()
   {
-    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP, ADC_CHANNEL_0);                    // PA0 / TS1_Pin
-    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, ADC_CHANNEL_4);                     // PA4 / FM1_Pin
-    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, ADC_CHANNEL_10);         // PC0 / Level_sensor_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_11); // PC1 / PT2_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_12); // PC2 / PT3_Pin
-    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, ADC_CHANNEL_13);             // PC3 / TC_1_Pin
-    init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, ADC_CHANNEL_6);                            // PA6 / Index 6
+    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP, ADC_CHANNEL_0);                        // PA0 / TS1_Pin
+    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, ADC_CHANNEL_4);                        // PA4 / FM1_Pin
+    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, ADC_CHANNEL_10);          // PC0 / Level_sensor_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_11);  // PC1 / PT2_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_12);  // PC2 / PT3_Pin
+    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, ADC_CHANNEL_13);               // PC3 / TC_1_Pin
+    init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, ADC_CHANNEL_6);                                // PA6 / Index 6
   }
 
 
@@ -170,7 +172,7 @@ static void update_sensor_value(struct sensor_t* s)
       
 
       // Actual pressure
-      s->value =   V_i * a + b ; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
+      s->value =   V_i * a + b + 1; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
       break;
     }
 
@@ -319,7 +321,25 @@ static void update_sensor_value(struct sensor_t* s)
 
   case LEAK_DETECTOR:
     {
-      s->value = V_o; // Assign the raw voltage or convert it to a meaningful unit
+
+      double R_1 = 5000;
+      double R_2 = 10000;
+      double V_i = V_o * (R_1 + R_2) / R_2;
+      double max_concentration = 20000 ; //20000.0 ;
+      double min_concentration = 0 ;
+      double min_voltage = 0.5;
+      double max_voltage = 4.5;
+      double a = (max_concentration - min_concentration) / (max_voltage-min_voltage);
+      double b  = min_concentration - a*min_voltage;
+
+
+
+        if (V_i < 0.5 || V_i > 4.6) { //wAS 0.5
+        s->value = 0;
+        return;
+    }
+
+         s->value =   V_i * a + b ; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
       break;
     }
 
@@ -442,10 +462,10 @@ static void update_sensor_value(struct sensor_t* s)
       sensors.liquid_tank_pressure_sensor_1.value);
     lh2_status.liquid_tank_pres_2 = database_bc_hdgn_chub_sens_lh2_status_liquid_tank_pres_2_encode(
       sensors.liquid_tank_pressure_sensor_2.value);
-  lh2_status.level_sensor = database_bc_hdgn_chub_sens_lh2_status_level_sensor_encode(
-  sensors.liquid_tank_level_sensor.value);
-  lh2_status.liquid_tank_temp = database_bc_hdgn_chub_sens_lh2_status_liquid_tank_temp_encode(
-sensors.liquid_tank_temperature_sensor.value);
+    lh2_status.level_sensor = database_bc_hdgn_chub_sens_lh2_status_level_sensor_encode(
+     sensors.liquid_tank_level_sensor.value);
+    lh2_status.liquid_tank_temp = database_bc_hdgn_chub_sens_lh2_status_liquid_tank_temp_encode(
+      sensors.liquid_tank_temperature_sensor.value);
 
   database_bc_hdgn_chub_sens_lh2_status_pack(data, &lh2_status, DATABASE_BC_HDGN_CHUB_SENS_LH2_STATUS_LENGTH);
   
@@ -460,7 +480,14 @@ sensors.liquid_tank_temperature_sensor.value);
     sensors.cooling_temp_sensor.value);
 
   database_bc_cryo_chub_sens_h2_status_cool_pack(data, &cryo_cool_status, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH);
+
   queue_CAN_message(&hcan1, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_FRAME_ID, DATABASE_BC_CRYO_CHUB_SENS_H2_STATUS_COOL_LENGTH, data);
+
+  
+  h2_analogue_vi_bc.hdgn_analogue_1_vi = database_bc_hdgn_analogue_vi_hdgn_analogue_1_vi_encode(sensors.leak_sensor.value);
+  database_bc_hdgn_analogue_vi_pack(data, &h2_analogue_vi_bc, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH);
+
+  queue_CAN_message(&hcan1, DATABASE_BC_HDGN_ANALOGUE_VI_FRAME_ID, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH, data);
   }
 
   static void init_sensor(struct sensor_t* s, enum sensor_type type, uint32_t adc_channel)

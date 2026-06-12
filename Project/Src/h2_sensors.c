@@ -24,7 +24,7 @@ struct h2_sensors_t h2_sensors;
 struct database_bc_hdgn_sensor_status_t sensor_status_bc;
 struct database_bc_hdgn_sensors_can_t h2_sensors_can_bc;
 struct database_bc_hdgn_sensors_analogue_t h2_sensors_analogue_bc;
-struct database_bc_hdgn_analogue_vi_t h2_analogue_vi_bc;
+//struct database_bc_hdgn_analogue_vi_t h2_analogue_vi_bc;  moved to sensors.c because it is only used there
 
 
 double convert_ppm_to_lel(double concentration) {
@@ -148,10 +148,11 @@ static void read_analogue_h2_sensor(struct h2_sensor_t *s) {
         return;
     }
 
-    uint16_t dma_value = adc_buf[s->dma_item];
-
-    // Mapping the dma value to the actual measured voltage
-    double V_o = 3.3 * dma_value / 4095.0;
+    // Use the polling ADC read function to bypass DMA
+    extern double ADC_Read_Channel(uint32_t channel);
+    double V_o = ADC_Read_Channel(s->dma_item); // Using dma_item as the ADC channel
+    
+    uint16_t dma_value = (uint16_t)((V_o / 3.3) * 4095.0); // Recover raw value for CAN message
 
     // The h2 sensor is ratiometric what means that it is linear. 0-0.5V is non-valid and 0.5-4.5V is expected
     // behaviour. 4.5V to 4.6V is overscale?
@@ -326,8 +327,6 @@ static void convert_analogue_h2_data_to_boat_CAN(struct h2_sensor_t *s) {
         // HDGN status message
         // sensor_status_bc.analog_sensor_centre_disconnected = s->disconnected;
         // sensor_status_bc.analog_sensor_centre_disconnected = s->disconnected;
-        h2_analogue_vi_bc.hdgn_analogue_1_vi =s->voltage_value;
-            //database_bc_hdgn_analogue_vi_hdgn_analogue_1_vi_encode(s->voltage_value); //TODOvivian added this
     }
 }
 
@@ -355,10 +354,6 @@ void send_h2_sensor_status() {
     queue_CAN_message(&hcan2, DATABASE_BC_HDGN_SENSOR_STATUS_FRAME_ID, DATABASE_BC_HDGN_SENSOR_STATUS_LENGTH, data);
     database_bc_hdgn_sensors_can_pack(data, &h2_sensors_can_bc, DATABASE_BC_HDGN_SENSORS_CAN_LENGTH);
     queue_CAN_message(&hcan2, DATABASE_BC_HDGN_SENSORS_CAN_FRAME_ID, DATABASE_BC_HDGN_SENSORS_CAN_LENGTH, data);
-    //uint8_t data2[8];
-
-    database_bc_hdgn_analogue_vi_pack(data, &h2_analogue_vi_bc, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH);
-    queue_CAN_message(&hcan2, DATABASE_BC_HDGN_ANALOGUE_VI_FRAME_ID, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH, data);
 
    }
 
@@ -382,9 +377,9 @@ void init_h2_sensors() {
     init_h2_sensor(&h2_sensors.can_h2_sensor_fc, CAN_H2_SENSOR, -1);
     init_h2_sensor(&h2_sensors.can_h2_sensor_star, CAN_H2_SENSOR, -1);
     init_h2_sensor(&h2_sensors.can_h2_sensor_4, CAN_H2_SENSOR, -1);
-    init_h2_sensor(&h2_sensors.analogue_h2_sensor_centre, ANALOGUE_H2_SENSOR, 4);
     
-    // Disabled analogue H2 sensor - it was conflicting with PT3 on DMA index 4!
-    init_h2_sensor(&h2_sensors.analogue_h2_sensor_centre, CAN_H2_SENSOR, -1); 
+    // Safe to re-enable without DMA! Use the proper ADC channel macro.
+    // Update ADC_CHANNEL_6 if the analogue sensor uses a different pin!
+    init_h2_sensor(&h2_sensors.analogue_h2_sensor_centre, ANALOGUE_H2_SENSOR, ADC_CHANNEL_6);
 
 }

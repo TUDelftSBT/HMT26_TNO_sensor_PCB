@@ -46,7 +46,7 @@ struct moving_average_t {
 
 struct sensor_t {
     enum sensor_type type;
-    uint8_t dma_item;
+    uint32_t adc_channel;
     double value;
     struct moving_average_t moving_average;
 };

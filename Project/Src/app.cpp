@@ -13,11 +13,12 @@
 #define H2_SENSOR_MESSAGE_INTERVAL 100
 
 static uint32_t h2_tick = 0;
+/*uint16_t adc_buf[ADC_BUF_LEN];*/
 
 void app_init(void) {
     // Initialization of the application
     USER_CAN1_INIT();
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, ADC_BUF_LEN);
+  /*  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, ADC_BUF_LEN); */
     init_sensors();
     init_h2_sensors();
     h2_tick = HAL_GetTick();

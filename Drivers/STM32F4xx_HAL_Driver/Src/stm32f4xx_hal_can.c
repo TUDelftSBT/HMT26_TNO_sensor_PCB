@@ -1280,7 +1280,7 @@ HAL_StatusTypeDef HAL_CAN_AddTxMessage(CAN_HandleTypeDef *hcan, const CAN_TxHead
     {
       /* Select an empty transmit mailbox */
       transmitmailbox = (tsr & CAN_TSR_CODE) >> CAN_TSR_CODE_Pos;
-     
+
       /* Store the Tx mailbox */
       *pTxMailbox = (uint32_t)1 << transmitmailbox;
 
