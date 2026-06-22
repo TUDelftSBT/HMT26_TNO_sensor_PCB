@@ -17,6 +17,7 @@ struct sensors_t sensors;
 
 struct database_bc_hdgn_chub_sens_lh2_status_t lh2_status;
 struct database_bc_cryo_chub_sens_h2_status_cool_t cryo_cool_status;
+struct database_bc_hdgn_alicat_status_t alicat_status;
 
 struct database_bc_hdgn_analogue_vi_t h2_analogue_vi_bc;
 
@@ -111,14 +112,19 @@ static double __attribute__((unused)) get_moving_average(struct moving_average_t
 
   void init_sensors()
   {
-    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP, ADC_CHANNEL_0);                        // PA0 / TS1_Pin
-    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, ADC_CHANNEL_4);                        // PA4 / FM1_Pin
-    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, ADC_CHANNEL_10);          // PC0 / Level_sensor_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_11);  // PC1 / PT2_Pin
-    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_12);  // PC2 / PT3_Pin
-    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, ADC_CHANNEL_13);               // PC3 / TC_1_Pin
+    init_sensor(&sensors.cooling_temp_sensor, COOLING_TEMP, ADC_CHANNEL_1);                         // PA0 / TS1_Pin
+    init_sensor(&sensors.cooling_flow_sensor, COOLING_FLOW, ADC_CHANNEL_4);                         // PA4 / FM1_Pin
+    init_sensor(&sensors.liquid_tank_level_sensor, LIQUID_SENSOR_LEVEL, ADC_CHANNEL_10);            // PC0 / Level_sensor_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_1, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_11);    // PC1 / PT2_Pin
+    init_sensor(&sensors.liquid_tank_pressure_sensor_2, LIQUID_SENSOR_PRESSURE, ADC_CHANNEL_12);    // PC2 / PT3_Pin
+    init_sensor(&sensors.liquid_tank_temperature_sensor, CYRO_TEMP, ADC_CHANNEL_13);                // PC3 / TC_1_Pin
     init_sensor(&sensors.leak_sensor, LEAK_DETECTOR, ADC_CHANNEL_6);                                // PA6 / Index 6
-  }
+
+    // Alicat Sensors
+    init_sensor(&sensors.alicat_flow_sensor, ALICAT_FLOW, ADC_CHANNEL_5);                           // PA5 / Alicat_flow_Pin
+    init_sensor(&sensors.alicat_temp_sensor, ALICAT_TEMP, ADC_CHANNEL_7);                           // PA7 / Alicat_temp_Pin
+}
+  
 
 
 static void update_sensor_value(struct sensor_t* s)
@@ -342,6 +348,72 @@ static void update_sensor_value(struct sensor_t* s)
          s->value =   V_i * a + b ; // unknown offset needed hmt25 I appologize I'm not going to look futher into it.
       break;
     }
+  case ALICAT_FLOW:
+  {
+
+    double R_1 = 149.46;
+    double min_temp = 0;
+    double max_temp = 1.5;
+    double min_current = 0.004;
+    double max_current = 0.020;
+    double a = (max_temp- min_temp)/ (R_1*max_current-R_1*min_current);
+    double b = min_temp - a*min_current*R_1;
+    //double a = (max_temp- min_temp)/ (voltage_dif-(R_1*min_current));
+    //double b = min_temp - a*min_current*R_1;
+
+    // If the measured voltage equals an invalid value, set the pressure to 0 degreese
+    if (V_o <= R_1*min_current) {
+      s->value = 0;
+      return;
+    }
+    /*
+      if (V_o >= 0.2)
+    {
+      HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+      return;
+    }
+      
+    HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+    */
+    // Actual temperture
+    s->value = V_o * a + b;
+    break;
+  }
+
+
+  case ALICAT_TEMP:
+  {
+
+    double R_1 = 149.46;
+    double min_temp = 0;
+    double max_temp = 100;
+    double min_current = 0.004;
+    double max_current = 0.020;
+    double a = (max_temp- min_temp)/ (R_1*max_current-R_1*min_current);
+    double b = min_temp - a*min_current*R_1;
+    //double a = (max_temp- min_temp)/ (voltage_dif-(R_1*min_current));
+    //double b = min_temp - a*min_current*R_1;
+
+    // If the measured voltage equals an invalid value, set the pressure to 0 degreese
+    if (V_o <= R_1*min_current) {
+      s->value = 0;
+      return;
+    }
+    /*
+      if (V_o >= 0.2)
+    {
+      HAL_GPIO_TogglePin(LED_DEBUG_5_GPIO_Port, LED_DEBUG_5_Pin);
+
+      return;
+    }
+      
+    HAL_GPIO_TogglePin(LED_DEBUG_4_GPIO_Port, LED_DEBUG_4_Pin);
+    */
+    // Actual temperture
+    s->value = V_o * a + b;
+    break;
+  }
 
   default:
     break;
@@ -445,6 +517,8 @@ static void update_sensor_value(struct sensor_t* s)
     update_sensor_value(&sensors.liquid_tank_pressure_sensor_2);
     update_sensor_value(&sensors.liquid_tank_temperature_sensor);
     update_sensor_value(&sensors.leak_sensor);
+    update_sensor_value(&sensors.alicat_flow_sensor);
+    update_sensor_value(&sensors.alicat_temp_sensor);
 
 
   }
@@ -486,8 +560,13 @@ static void update_sensor_value(struct sensor_t* s)
   
   h2_analogue_vi_bc.hdgn_analogue_1_vi = database_bc_hdgn_analogue_vi_hdgn_analogue_1_vi_encode(sensors.leak_sensor.value);
   database_bc_hdgn_analogue_vi_pack(data, &h2_analogue_vi_bc, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH);
-
   queue_CAN_message(&hcan1, DATABASE_BC_HDGN_ANALOGUE_VI_FRAME_ID, DATABASE_BC_HDGN_ANALOGUE_VI_LENGTH, data);
+
+  alicat_status.alicat_temp = database_bc_hdgn_alicat_status_alicat_temp_encode(sensors.alicat_temp_sensor.value);
+  alicat_status.alicat_pres = 0;
+  alicat_status.alicat_flow = database_bc_hdgn_alicat_status_alicat_flow_encode(sensors.alicat_flow_sensor.value);
+  database_bc_hdgn_alicat_status_pack(data, &alicat_status, DATABASE_BC_HDGN_ALICAT_STATUS_LENGTH);
+  queue_CAN_message(&hcan1, DATABASE_BC_HDGN_ALICAT_STATUS_FRAME_ID, DATABASE_BC_HDGN_ALICAT_STATUS_LENGTH, data);
   }
 
   static void init_sensor(struct sensor_t* s, enum sensor_type type, uint32_t adc_channel)

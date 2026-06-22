@@ -20,7 +20,9 @@ enum sensor_type {
     CYRO_TEMP,
     COOLING_TEMP,
     COOLING_FLOW,
-    LEAK_DETECTOR
+    LEAK_DETECTOR,
+    ALICAT_FLOW,
+    ALICAT_TEMP
 };
 
 
@@ -59,6 +61,8 @@ struct sensors_t {
     struct sensor_t cooling_temp_sensor;                // TS-1 PA0
     struct sensor_t cooling_flow_sensor;                // FM-1 PA4
     struct sensor_t leak_sensor;                        // Leak detector PA6
+    struct sensor_t alicat_flow_sensor;                 // Alicat flow PA5
+    struct sensor_t alicat_temp_sensor;                 // Alicat temp PA7
 };
 
 void update_sensor_values();

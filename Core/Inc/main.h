@@ -68,12 +68,16 @@ void Error_Handler(void);
 #define PT3_GPIO_Port GPIOC
 #define TC_1_Pin GPIO_PIN_3
 #define TC_1_GPIO_Port GPIOC
-#define TS1_Pin GPIO_PIN_0
+#define TS1_Pin GPIO_PIN_1
 #define TS1_GPIO_Port GPIOA
 #define FM_1_Pin GPIO_PIN_4
 #define FM_1_GPIO_Port GPIOA
+#define Alicat_flow_Pin GPIO_PIN_5
+#define Alicat_flow_GPIO_Port GPIOA
 #define Leak_sensor_Pin GPIO_PIN_6
 #define Leak_sensor_GPIO_Port GPIOA
+#define Alicat_temp_Pin GPIO_PIN_7
+#define Alicat_temp_GPIO_Port GPIOA
 #define LED_DEBUG_3_Pin GPIO_PIN_2
 #define LED_DEBUG_3_GPIO_Port GPIOB
 #define BOAT_CAN_TX_X_Pin GPIO_PIN_13
